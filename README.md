@@ -1,8 +1,34 @@
-# SuperMew 项目说明
+# Group_Learn_RAG · Agentic RAG 学习复现
 
-Agent的项目记录，方便后续持续更新与展示。
+> **致谢 / Credits**：本仓库基于开源项目 [icey1287/SuperMew](https://github.com/icey1287/SuperMew)（MIT License）进行学习与复现，原始版权归 SuperMew 作者所有，许可证见 [LICENSE](LICENSE)。
+> This repository is a learning reproduction of [icey1287/SuperMew](https://github.com/icey1287/SuperMew), used under the MIT License. All original copyright belongs to the SuperMew authors.
 
-[![zread](https://img.shields.io/badge/Ask_Zread-_.svg?style=flat&color=00b0aa&labelColor=000000&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQuOTYxNTYgMS42MDAxSDIuMjQxNTZDMS44ODgxIDEuNjAwMSAxLjYwMTU2IDEuODg2NjQgMS42MDE1NiAyLjI0MDFWNC45NjAxQzEuNjAxNTYgNS4zMTM1NiAxLjg4ODEgNS42MDAxIDIuMjQxNTYgNS42MDAxSDQuOTYxNTZDNS4zMTUwMiA1LjYwMDEgNS42MDE1NiA1LjMxMzU2IDUuNjAxNTYgNC45NjAxVjIuMjQwMUM1LjYwMTU2IDEuODg2NjQgNS4zMTUwMiAxLjYwMDEgNC45NjE1NiAxLjYwMDFaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00Ljk2MTU2IDEwLjM5OTlIMi4yNDE1NkMxLjg4ODEgMTAuMzk5OSAxLjYwMTU2IDEwLjY4NjQgMS42MDE1NiAxMS4wMzk5VjEzLjc1OTlDMS42MDE1NiAxNC4xMTM0IDEuODg4MSAxNC4zOTk5IDIuMjQxNTYgMTQuMzk5OUg0Ljk2MTU2QzUuMzE1MDIgMTQuMzk5OSA1LjYwMTU2IDE0LjExMzQgNS42MDE1NiAxMy43NTk5VjExLjAzOTlDNS42MDE1NiAxMC42ODY0IDUuMzE1MDIgMTAuMzk5OSA0Ljk2MTU2IDEwLjM5OTlaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik0xMy43NTg0IDEuNjAwMUgxMS4wMzg0QzEwLjY4NSAxLjYwMDEgMTAuMzk4NCAxLjg4NjY0IDEwLjM5ODQgMi4yNDAxVjQuOTYwMUMxMC4zOTg0IDUuMzEzNTYgMTAuNjg1IDUuNjAwMSAxMS4wMzg0IDUuNjAwMUgxMy43NTg0QzE0LjExMTkgNS42MDAxIDE0LjM5ODQgNS4zMTM1NiAxNC4zOTg0IDQuOTYwMVYyLjI0MDFDMTQuMzk4NCAxLjg4NjY0IDE0LjExMTkgMS42MDAxIDEzLjc1ODQgMS42MDAxWiIgZmlsbD0iI2ZmZiIvPgo8cGF0aCBkPSJNNCAxMkwxMiA0TDQgMTJaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00IDEyTDEyIDQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K&logoColor=ffffff)](https://zread.ai/icey1287/SuperMew)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)
+![Milvus](https://img.shields.io/badge/Milvus-00A1EA)
+
+## English Overview
+
+An agentic RAG (retrieval-augmented generation) system built on FastAPI, LangChain/LangGraph and Milvus. I reproduced it to learn production-grade RAG engineering.
+
+Topics covered:
+
+- **Hybrid retrieval**: dense vectors (bge-m3) plus hand-built BM25 sparse vectors, fused with Milvus Hybrid Search and RRF, then reranked with Jina Rerank.
+- **Hierarchical chunking and auto-merging**: three-level sliding-window chunks. Only leaf chunks are embedded; parent chunks live in PostgreSQL and are merged back at retrieval time.
+- **Self-correcting RAG graph**: relevance grading, then query rewriting (Step-Back or HyDE), then a second retrieval pass.
+- **Streaming and observability**: token-by-token SSE output, with RAG steps pushed to the UI in real time through a thread-safe asyncio queue.
+- **Backend basics**: JWT authentication with admin/user RBAC, PostgreSQL persistence, Redis caching, and conversation summarisation memory.
+
+Run locally: `docker compose up -d` (Milvus, PostgreSQL, Redis), then `uv sync && uv run uvicorn backend.app:app --port 8000` and open http://127.0.0.1:8000/.
+
+---
+
+## 中文说明
+
+本项目是对 [SuperMew](https://github.com/icey1287/SuperMew) 的复现，用于系统学习 Agentic RAG 的工程实现：混合检索（稠密 + BM25 稀疏 + RRF + Rerank）、三级分块与 Auto-merging、相关性评分门控与查询重写（Step-Back / HyDE）、流式输出与检索过程可视化，以及 JWT 鉴权、PostgreSQL 持久化和 Redis 缓存等后端能力。
+
+以下为项目的详细说明。
 
 ## 本地部署
 
